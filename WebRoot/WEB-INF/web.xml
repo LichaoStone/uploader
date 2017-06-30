@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://java.sun.com/xml/ns/javaee" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" id="WebApp_ID" version="2.5">
+  <display-name>uploader</display-name>
+  <servlet>
+    <description>This is the description of my J2EE component</description>
+    <display-name>This is the display name of my J2EE component</display-name>
+    <servlet-name>Upload</servlet-name>
+    <servlet-class>uploader.Upload</servlet-class>
+  </servlet>
+  <servlet>
+    <description>This is the description of my J2EE component</description>
+    <display-name>This is the display name of my J2EE component</display-name>
+    <servlet-name>QkCdn</servlet-name>
+    <servlet-class>uploader.QkCdn</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet>
+    <description>This is the description of my J2EE component</description>
+    <display-name>This is the display name of my J2EE component</display-name>
+    <servlet-name>Business</servlet-name>
+    <servlet-class>uploader.Business</servlet-class>
+  </servlet>
+  <servlet>
+    <servlet-name>Ping</servlet-name>
+    <servlet-class>Utils.PingUtil</servlet-class>
+  </servlet>
+  <listener>
+    <listener-class>
+		    org.apache.commons.fileupload.servlet.FileCleanerCleanup
+	    </listener-class>
+  </listener>
+  <servlet-mapping>
+    <servlet-name>Upload</servlet-name>
+    <url-pattern>/servlet/Upload</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>QkCdn</servlet-name>
+    <url-pattern>/qk-cdn</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>Business</servlet-name>
+    <url-pattern>/business</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>Ping</servlet-name>
+    <url-pattern>/Ping</url-pattern>
+  </servlet-mapping>
+  <filter>
+    <filter-name>CorsFilter</filter-name>
+    <filter-class>uploader.CORSFilter</filter-class>
+  </filter>
+  <filter-mapping>
+    <filter-name>CorsFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+  <error-page>
+    <error-code>403</error-code>
+    <location>/404.html</location>
+  </error-page>
+  <error-page>
+    <error-code>404</error-code>
+    <location>/404.html</location>
+  </error-page>
+  <error-page>
+    <error-code>500</error-code>
+    <location>/404.html</location>
+  </error-page>
+  <welcome-file-list>
+    <welcome-file>
+          /cur.html
+      </welcome-file>
+  </welcome-file-list>
+
+</web-app>

@@ -1,0 +1,193 @@
+.progress-bar {
+	height: 4px;
+	background-color: yellow;
+	max-width: 30%;
+}
+*{
+	font-family: 微软雅黑;
+}
+::-webkit-scrollbar {
+	width: 8px;
+	height: 0px;
+}
+.showtable td{
+    overflow:hidden;white-space:nowrap;word-break:keep-all;
+}
+.showtable td div{
+    overflow:hidden;
+    white-space:nowrap;
+}
+
+#selectFrame::-webkit-scrollbar-thumb{
+     background-image:url("js/bgpostintro.png");
+     border-radius:4px;
+}
+
+.realpickfuck{
+   	width: 160px;
+ 	height:100px;		
+	margin-top: 10px;
+	margin-left: 15px;
+	display: inline-block;
+	float: left;
+	background-image: url("js/im_shipintianjia.png");
+	border: 1px solid #dedede;
+	background-position: center;
+   }
+   
+.webuploader-pick{
+	background: #FFFFFF;
+}
+.pickbtn{
+	width:82px;
+	height:30px;
+	line-height:30px;
+	border:1px solid #DDDDDD;
+	background-color: #F7F7F7;
+	margin-left: 5px;
+	float: left;
+}
+
+*{
+	color: #575757;
+	font-size: 14px;
+}
+.pauseOrst{
+	width: 12px;
+}
+.right{
+	display:  block;
+	float: left;
+	margin-right: 6px;
+}
+body{
+	margin:  0 0 0 0;
+	padding: 0 0 0 0
+}
+.drafting-box{
+	color: #666666;
+	font-size: 14px;
+	margin-top:6px;
+}
+
+.drafting-img{
+    width: 110px;
+    height: 110px;
+    margin-top:70px;
+}
+.font-explain{
+	color: #999999;
+	margin-left: 20px;
+	margin-left: 20px;
+	margin-top:10px;
+	line-height: 24px;
+}
+
+.top-warm{
+	margin-left:120px;
+	margin-top: -38px;
+	width: 200px;
+	float: left;
+	font-size: 12px;
+	letter-spacing: 1px;
+}
+
+.select-frame{
+	margin-left: 20px;
+	margin-right: 50px;
+	height:300px;
+	border: 1px solid #DDDDDD;
+	overflow:scroll;
+	overflow-y :scroll;
+	overflow-x:hidden;
+	position: relative;
+	background-color: #F5F6FA
+}
+
+.line-one{
+	margin-left:20px;
+	margin-right:50px;
+	border-top:1px solid #E2E2E2;
+	margin-top: 16px;
+}
+
+.filename-div{
+	width: 18%;
+	float: left;
+	height: 20px;
+	line-height: 20px;
+	overflow: hidden;
+	margin-left: 1%;
+}
+
+.chname-fileid-box{
+	width:18%;
+	margin-left: 1%;
+	height: 20px;
+	line-height: 20px;
+	overflow: hidden;
+	float: left;
+	text-align: center;
+}
+
+.initBar-fileid{
+   width: 15%;
+   float: left;
+   margin-left: 1%;
+   background-color:#C1C1C1;
+   border-radius:4px;
+   margin-top: 6px;
+}
+
+.processBar-fileid{
+    width: 0%;
+    background-color:#1ABC9C;
+    border-radius:4px;
+    height: 8px;
+    display: inline-block;
+    float: left;
+}
+.fileid-div{
+	width:8%;
+	float: left;
+	margin-left: 1%;
+	height: 20px;
+	line-height: 20px;
+	overflow: hidden;
+}
+
+.speed_cls_box{
+   width:8%;
+   float: left;
+   margin-left: 1%;
+   height: 20px;
+   line-height: 20px;
+   overflow: hidden;
+}
+
+.pstatusText-fileid{
+  width:17%;
+  float: left;
+  margin-left: 1%;
+  height: 20px;
+  line-height: 20px;
+  overflow: hidden;
+}
+
+.btn-box{
+	width:8%;
+	margin-left: 1%;
+	float: left;
+	margin-top: 3px;
+}
+
+.cancelFile{
+	float: right;
+	margin-right:10px;
+	display: none;
+}
+
+.startOpStop{
+	float: right;
+	margin-right:20px;
+}
