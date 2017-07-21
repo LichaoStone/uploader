@@ -4039,19 +4039,8 @@
                             block.retried < opts.chunkRetry ) {
     
                         block.retried++;
-                        //  tr.send();
+                        tr.send();
                         //自定义
-                       /* setTimeout(function(){
-                        	  tr.send();
-                        },5000)*/
-                        
-                        
-                        setTimeout(function(){
-                        	
-                        	 startOpStop(file.id);
-                             startOpStop(file.id);
-                        },3000)
-                       
                        
                     } else {
                     	
