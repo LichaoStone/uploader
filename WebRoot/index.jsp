@@ -50,7 +50,27 @@ $(document).ready(function(){
 	init_network_select();
 });
 
+var parent={
+		dnd : '#selectort',
+		disableGlobalDnd : true,
+		swf : '${path}/js/Uploader.swf',
+		server : '${path}/servlet/Upload',
+		auto:false,
+		//内部根据当前运行是创建，可能是input元素，也可能是flash.
+		pick :{id:'#picker',innerHTML:'<div class="pickbtn">上 传</div>'} ,
+		accept :{extensions:'${exts}'},
+		chunked : true,
+		formData : {
+			"access_token":"${param.access_token}"
+		},
+		threads :1,
+		//sendAsBinary:true,
+		//不压缩image,默认如果是jpeg,文件上传前会压缩一把再上传！
+		resize : false,
+		fileNumLimit:'${limit}'
+}
 
+/*创建webuploader子实例参数配置*/
 var childt={
 		swf : '${path}/js/Uploader.swf',
 		chunked:true,
@@ -61,11 +81,12 @@ var childt={
 		threads :1,
 		resize : false,
 		fileNumLimit:1,
-		//chunkSize:2097152,
 		chunkSize:1048576,
 		chunkRetry:5,
 		auto:false
-}
+};
+
+	
 
 var map=new HashMap();
 var ingNum=0;
@@ -127,22 +148,22 @@ var telecomHttps_url = "<%=telecomHttps_url%>";
 </div>
 
 <div id="selectort" >
- 		<!--上传按钮 -->
-		<div id="picker" style="width: 110px;"></div>
-		
-		<div class="top-warm">
-		       上传过程中不要关闭窗口
-		</div>
-		
-		<!-- 上传图片按钮 -->
-		<div id="selectFrame" class="select-frame">
-			<div id="bginner" style="text-align: center;" >
-				<img  src="js/bg.png" class="drafting-img">
-				<div class="drafting-box">
-				          支持拖拽文件或文件夹上传
-				</div>
-			</div>
-		</div>
+	 <!--上传按钮 -->
+	 <div id="picker" style="width: 110px;"></div>
+	
+	 <div class="top-warm">
+	        上传过程中不要关闭窗口
+	 </div>
+	
+	 <!-- 上传图片按钮 -->
+	 <div id="selectFrame" class="select-frame">
+		 <div id="bginner" style="text-align: center;" >
+			 <img  src="js/bg.png" class="drafting-img">
+			 <div class="drafting-box">
+			           支持拖拽文件或文件夹上传
+			 </div>
+		 </div>
+	 </div>
 </div>
 
 <!-- 上传盒子 -->
@@ -195,29 +216,7 @@ var telecomHttps_url = "<%=telecomHttps_url%>";
 		
 		initOn();
 		function initOn(){
-			uploader= WebUploader.create({
-					dnd : '#selectort',
-					disableGlobalDnd : true,
-					// swf文件路径
-					swf : '${path}/js/Uploader.swf',
-					// 文件接收服务端。
-					server : '${path}/servlet/Upload',
-					auto:false,
-					// 选择文件的按钮。可选。
-					// 内部根据当前运行是创建，可能是input元素，也可能是flash.
-					pick :{id:'#picker',innerHTML:'<div class="pickbtn">上 传</div>'} ,
-					//临时注销
-					accept :{extensions:'${exts}'},
-					chunked : true,
-					formData : {
-						"access_token":"${param.access_token}"
-					},
-					threads :1,
-					//sendAsBinary:true,
-					// 不压缩image, 默认如果是jpeg，文件上传前会压缩一把再上传！
-					resize : false,
-					fileNumLimit:'${limit}'
-			});
+			uploader= WebUploader.create(parent);
 			
 			//给拖拽图片添加文件按钮
 			uploader.addButton({
@@ -258,6 +257,7 @@ var telecomHttps_url = "<%=telecomHttps_url%>";
 				if(document.getElementById("bginner")!=null){
 					$("#bginner").remove();
 				}
+				
 				queueNum++;
 				var htm = $("#fackerModel").html();
 	
@@ -357,10 +357,8 @@ var telecomHttps_url = "<%=telecomHttps_url%>";
 								$("#statusText_" + file.id).html("<img class='right' src='js/wrong.png'/>文件格式错误");
 								//postDel(file.id);
 							}else{
-								console.log("判断是否需要转码");
 								var fid=fidandTimer.get(file.id);
 								var name=file.name;
-								console.log("fid="+fid+";name="+name);
 								var data={
 										process	:"isTransCoding",
 										fid:fid,
@@ -373,18 +371,15 @@ var telecomHttps_url = "<%=telecomHttps_url%>";
 									url : basePath+"business?process=isTransCoding&fid=" + fid +"&access_token=" + "${param.access_token}" + "&name=" + encodeURIComponent(encodeURIComponent(name)),
 									timeout : 3600000,
 									success : function(result) {
-										  console.log("是否需要转码：result="+result);
 										  var res=new Array();
 										  res=result.split(",");
-										  console.log(res[0]);//是否转码
-										  console.log(res[1]);//t_transcoding自增主键
 										  if(res[0]=="1"){//需要转码
 											  $("#statusText_" + file.id).html("<img class='right' src='js/ic_likeshuaxin.png'/>转码中");
-										      console.log("需要转码,开始转码");
+										      console.log("coding... ...");
 										      toCoding(file.id,file.name,res[1]);
 										  }else{//不需要转码
 											  $("#statusText_" + file.id).html("<img class='right' src='js/ic_likeshuaxin.png'/>文件复制中");
-											  console.log("不需要转码,开始复制文件");
+											  console.log("copying... ...");
 											  toCopyFile(file.id,file.name,res[1]);
 										  }
 								    },
@@ -424,6 +419,8 @@ var telecomHttps_url = "<%=telecomHttps_url%>";
 				
 				//开始上传：当开始上传流程时触发
 				uppchild.on("startUpload", function() {
+					console.log("开始上传");
+					
 					ingNum=ingNum+1;
 					var id=uppchild.getFiles()[0].id;
 					queueNum--;
@@ -433,12 +430,6 @@ var telecomHttps_url = "<%=telecomHttps_url%>";
 					document.getElementById("speed_"+file.id).setAttribute("iz",0);
 					//document.getElementById("speed_"+file.id).setAttribute("iz2",0);
 					document.getElementById("speed_"+file.id).setAttribute("st",1);
-					
-					console.group("开始上传");
-					console.log("ingNum="+ingNum);
-					console.log("queueNum="+queueNum);
-					console.groupEnd();
-					
 				})
 			
 			    //大文件在开起分片上传的前提下此事件可能会触发多次。
@@ -463,11 +454,12 @@ var telecomHttps_url = "<%=telecomHttps_url%>";
 		});
 	}
 		
-	function replaceAll(s, s1, s2) {
-			return s.replace(new RegExp(s1, "gm"), s2);
-		}
-
 		
+	function replaceAll(s, s1, s2) {
+		return s.replace(new RegExp(s1, "gm"), s2);
+	}
+
+	/*将上传文件移除出队列*/	
 	function cancelFile(fid) {
 			if(confirm("确认是否删除")){
 				var uppchild=map.get(fid);
@@ -492,7 +484,6 @@ var telecomHttps_url = "<%=telecomHttps_url%>";
 		}
 		
 		function postProcess(){
-			console.log("postProcess");
 			var total=$(".speed_cls").length;
 			var suc=0;
 			$(".speed_cls").each(function(){
@@ -503,7 +494,6 @@ var telecomHttps_url = "<%=telecomHttps_url%>";
 			});
 			
 			var urlt="${process_url}";
-			//?process="+suc+"-"+total;
 			if("${process_url}"==""){
 				return;
 			}else{
@@ -514,19 +504,16 @@ var telecomHttps_url = "<%=telecomHttps_url%>";
 				}
 				
 				var urlme=basePath+"business?process=process&count="+(suc+"-"+total)+"&access_token=${param.access_token}";
-				console.log("count="+(suc+"-"+total));
-				console.log("access_token="+'${param.access_token}');
-				$.ajax(
-						{
-							url: urlme, 
-							success: function(obj){
+				$.ajax({
+						url: urlme, 
+						success: function(obj){
 							}
-						});
+					  });
 			}
 		}
 		
 		
-		//转码
+		/*转码*/
 		function toCoding(id,name,pk){
 			var fid=fidandTimer.get(id);
 			var data={
@@ -537,20 +524,22 @@ var telecomHttps_url = "<%=telecomHttps_url%>";
 					pk:pk
 			};
 			
-			//var urlme="business?process=coding&fid="+fid+"&access_token=${param.access_token}&name="+encodeURIComponent(encodeURIComponent(name));
-			//$.ajax({url: urlme, success: function(obj){
-			$.ajax({url: basePath+"business?process=coding&fid=" + fid + "&access_token=" + "${param.access_token}" + "&name=" + encodeURIComponent(encodeURIComponent(name)) + "&pk=" + pk,type:"post",success: function(obj){
-				if(obj==0){	
-					$("#statusText_" + id).html("<img class='right' src='js/right.png'/>成功");
-				}else if(obj==1){
-					$("#statusText_" + id).html("<img class='right' src='js/wrong.png'/>上传失败");
-				}else {
-					$("#statusText_" + id).html("<img class='right' src='js/wrong.png'/>转码失败");
-				}
-			}});
+			$.ajax({
+				url: basePath+"business?process=coding&fid=" + fid + "&access_token=" + "${param.access_token}" + "&name=" + encodeURIComponent(encodeURIComponent(name)) + "&pk=" + pk,
+				type:"post",
+				success: function(obj){
+						if(obj==0){	
+							$("#statusText_" + id).html("<img class='right' src='js/right.png'/>成功");
+						}else if(obj==1){
+							$("#statusText_" + id).html("<img class='right' src='js/wrong.png'/>上传失败");
+						}else {
+							$("#statusText_" + id).html("<img class='right' src='js/wrong.png'/>转码失败");
+						}
+					}
+				});
 		}
 			
-		//复制文件	
+		/*复制文件*/	
 		function toCopyFile(id,name,pk){
 			var fid=fidandTimer.get(id);
 			var data={
@@ -561,22 +550,23 @@ var telecomHttps_url = "<%=telecomHttps_url%>";
 					pk:pk
 			};
 			
-			
-			$.ajax({url: basePath+"business?process=copyFile&fid=" + fid + "&access_token=" + "${param.access_token}" + "&name=" + encodeURIComponent(encodeURIComponent(name)) + "&pk=" + pk,type:"post",success: function(obj){
-				if(obj==0){	
-					$("#statusText_" + id).html("<img class='right' src='js/right.png'/>成功");
-				}else if(obj==1){
-					$("#statusText_" + id).html("<img class='right' src='js/wrong.png'/>入库失败");
-				}else {
-					$("#statusText_" + id).html("<img class='right' src='js/wrong.png'/>文件复制失败");
+			$.ajax({
+				url: basePath+"business?process=copyFile&fid=" + fid + "&access_token=" + "${param.access_token}" + "&name=" + encodeURIComponent(encodeURIComponent(name)) + "&pk=" + pk,
+				type:"post",
+				success: function(obj){
+					if(obj==0){	
+						$("#statusText_" + id).html("<img class='right' src='js/right.png'/>成功");
+					}else if(obj==1){
+						$("#statusText_" + id).html("<img class='right' src='js/wrong.png'/>入库失败");
+					}else {
+						$("#statusText_" + id).html("<img class='right' src='js/wrong.png'/>文件复制失败");
+					}
 				}
-			}});
+			});
 		}
 			
 		
-		/**
-		 * 开始或暂停按钮
-		 */
+		/*开始或暂停按钮*/
 		function startOpStop(fid){
 			var up=map.get(fid);
 			var stats=up.getStats();
@@ -624,6 +614,7 @@ var telecomHttps_url = "<%=telecomHttps_url%>";
 			}
 		}
 		
+		/*更新上传速度*/
 		setInterval(function(){
 			if(ingNum<ManiCount){
 				$(".speed_cls").each(function(){
@@ -681,12 +672,11 @@ var telecomHttps_url = "<%=telecomHttps_url%>";
 			}catch(e){
 				initWid=0;
 			}
-			//alert(initWid);
 			return parseFloat(initWid).toFixed(2);
 		}
 		
 		
-		 function compareSize(fid){
+		function compareSize(fid){
 				var size= $("#speed_"+fid).attr("sz");
 				var percent=document.getElementById("processBar_"+fid).style.width;
 				percent=percent.split("%")[0];
@@ -704,106 +694,100 @@ var telecomHttps_url = "<%=telecomHttps_url%>";
 		 }
 	  
 		 
-	  /*
-	   * 栗超  20170710  */ 
+	  
+	   /*跟新上传速度*/ 
 	   setInterval(function(){
 		 $(".speed_cls").each(function(){
 			var fid=this.id.split("speed_")[1];
 			var st=this.getAttribute("st");
-			//var iz=this.getAttribute("iz");
 			var iz=getProcessBy(fid)*10;
+			
 			if(st==1&&iz<998){
 			    var _t=1000;
-			    // var _p=this.getAt
 				var p=this.getAttribute("iz");
 				var p1=this.getAttribute("iz2");
-				if(p1==null)p1=0;
+				if(p1==null){p1=0};
+				
 				var _p=p-p1;
-				if(_p<0)_p=0;
-			var s=this.getAttribute("sz");
+				if(_p<0){_p=0};
+				
+				var s=this.getAttribute("sz");
+				var str=compareSpeed(s,_p,_t,fid);
 			
-			var str=compareSpeed(s,_p,_t,fid);
-			
-			if(p==1000){
-				$(this).html("");	
-			}else{
-				$(this).html(str);
+				if(p==1000){
+					$(this).html("");	
+				}else{
+					$(this).html(str);
 				}
-			this.setAttribute("iz2",p);
-			
+				this.setAttribute("iz2",p);
 			}else{
 				$(this).html("");
 			}
 		 });
-		
 	 },2000);
 	 
-	
-		 
+	 /*更新已上传的文件大小*/
 	 setInterval(function(){
 		 $(".file_finish").each(function(){
 			 var finshiSize=compareSize(this.getAttribute("fid"));
 			 if(finshiSize!=null)
 			 this.innerHTML=finshiSize
 		 });
-		
 	 },1000)
 	 
 	 window.onbeforeunload=function(event){
-			var total=$(".speed_cls").length;
-			var suc=0;
-			$(".speed_cls").each(function(){
-				var st=this.getAttribute("st");
-				//var iz=this.getAttribute("iz");
-				var iz=getProcessBy(this.getAttribute("id").split("speed_")[1])*10;
-				if(st==1&&iz>999)suc++;			
-			});
-			
-			if(total>suc){
-				return "有文件尚未完成";
-			}else return "";
+		 var total=$(".speed_cls").length;
+		 var suc=0;
+		 $(".speed_cls").each(function(){
+			 var st=this.getAttribute("st");
+			 var iz=getProcessBy(this.getAttribute("id").split("speed_")[1])*10;
+			 if(st==1&&iz>999){suc++};			
+		 });
+		
+		 if(total>suc){
+			 return "有文件尚未完成";
+		 }else{
+			 return "";
+		 }
      }
-	    /**
-		 * 初始化线路选择下拉框
-		 */
-		function init_network_select() {
-			
-			console.group("线路选择下拉菜单");
+     
+	 /*初始化线路选择下拉框*/
+	 function init_network_select() {
+		
+		console.group("线路选择下拉菜单");
 			console.log("推荐网络："+recommend_url);
 			console.log("移动网络："+cmcc_url);
 			console.log("联通网络："+unicom_url);
 			console.log("电信线路:"+telecom_url);
 			console.log("HTTPS线路:"+telecomHttps_url);
-			console.groupEnd();
-			
-			var data=new Array();
-			if (recommend_url != "null" && recommend_url.length>0) {
-				$("#network").append("<option value='"+recommend_url+"'>推荐线路</option>");
-			}
-			if (cmcc_url != "null" && cmcc_url.length>0) {
-				$("#network").append("<option value='"+cmcc_url+"'>移动线路</option>");
-			}
-			if (unicom_url != "null" && unicom_url.length>0) {
-				$("#network").append("<option value='"+unicom_url+"'>联通线路</option>");
-			}
-			if (telecom_url != "null" && telecom_url.length>0) {
-				$("#network").append("<option value='"+telecom_url+"'>电信线路</option>");
-			}
-			
-			if (telecomHttps_url != "null" && telecomHttps_url.length>0) {
-				$("#network").append("<option value='"+telecomHttps_url+"'>https线路</option>");
-			}
+		console.groupEnd();
+		
+		var data=new Array();
+		if (recommend_url != "null" && recommend_url.length>0) {
+			$("#network").append("<option value='"+recommend_url+"'>推荐线路</option>");
 		}
+		if (cmcc_url != "null" && cmcc_url.length>0) {
+			$("#network").append("<option value='"+cmcc_url+"'>移动线路</option>");
+		}
+		if (unicom_url != "null" && unicom_url.length>0) {
+			$("#network").append("<option value='"+unicom_url+"'>联通线路</option>");
+		}
+		if (telecom_url != "null" && telecom_url.length>0) {
+			$("#network").append("<option value='"+telecom_url+"'>电信线路</option>");
+		}
+		
+		if (telecomHttps_url != "null" && telecomHttps_url.length>0) {
+			$("#network").append("<option value='"+telecomHttps_url+"'>https线路</option>");
+		}
+	}
 	    
-	    /**
-	     *	切换线路
-	     */
-		function networkChange(element) {
-			if(confirm("文件上传中更新线路，可能会造成无法续传的情况。确定更换线路吗？")){
-			}else{
-				return false;
-			}
+    /*切换线路*/
+	function networkChange(element) {
+		if(confirm("文件上传中更新线路，可能会造成无法续传的情况。确定更换线路吗？")){
+		}else{
+			return false;
 		}
-	</script>
+	}
+</script>
 </body>
 </html>
