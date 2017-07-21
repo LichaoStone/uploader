@@ -1,13 +1,8 @@
 package uploader;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
@@ -33,7 +28,6 @@ import org.apache.log4j.Logger;
 
 import redis.clients.jedis.Jedis;
 import Utils.FFMpegUtil;
-import Utils.HttpsOpenUtil;
 import Utils.JR;
 
 public class Upload extends HttpServlet {
@@ -50,8 +44,7 @@ public class Upload extends HttpServlet {
 	 * Destruction of the servlet. <br>
 	 */
 	public void destroy() {
-		super.destroy(); // Just puts "destroy" string in log
-		// Put your code here
+		super.destroy(); 
 	}
 	/**
 	 * The doGet method of the servlet. <br>
@@ -73,16 +66,16 @@ public class Upload extends HttpServlet {
 		request.setCharacterEncoding("UTF-8");
 		response.setContentType("text/html;charset=UTF-8");
 		
-		
 		//int issuccess=0;
 		int statusCode=0;
 		int partFinish=0;
 		PrintWriter pw = null;
+		
 		try {
 			String path = request.getParameter("path");
 			path = path != null ? java.net.URLDecoder.decode(path, "utf-8"):"";
 			boolean isMultipart=true;
-		
+			
 			if (isMultipart) {
 				FileItemFactory factory = new DiskFileItemFactory();
 				ServletFileUpload upload = new ServletFileUpload(factory);
@@ -90,8 +83,8 @@ public class Upload extends HttpServlet {
 				//得到所有的表单域，它们目前都被当作FileItem
 				List<FileItem> fileItems = upload.parseRequest(request);
 				
-				
 				/**
+				 * 二进制
 				 InputStream inputStream=request.getInputStream();
 		         String hash =request.getParameter("hash");
 				 String fileName = request.getParameter("name");
@@ -103,8 +96,7 @@ public class Upload extends HttpServlet {
 				 String access_token = request.getParameter("access_token");
 				 */
 		         
-
-		        String hash = "";
+				String hash="";
 				String fileName = "";
 				//String fileRealName = "";
 				String fid="";
@@ -160,11 +152,6 @@ public class Upload extends HttpServlet {
 				File realFile = new File(tempFilePath);
 				tempPath=this.getServletContext().getRealPath("/")+"media/temp/"+access_token+"/"+hash+"/";
 				tempPath=tempPath.replaceAll("//","/");
-				//String realPartName=MD5Util.string2MD5(access_token+"@split@"+hash);//+i;
-				//String realName=realPartName+ext;
-				log.info("【上传】tempFilePath="+tempFilePath);
-				log.info("【上传】tempPath="+tempPath);
-				
 				
 				// 分片处理时，前台会多次调用上传接口，每次都会上传文件的一部分到后台(默认每片为5M)
 				File tempFileDir = new File(tempPath);
@@ -172,25 +159,26 @@ public class Upload extends HttpServlet {
 					tempFileDir.mkdirs();
 				}
 
-				File tempPartFile = new File(tempFileDir.getPath(), hash
-						+ "_" + chunk + ".part");
-				FileUtils.copyInputStreamToFile(tempFileItem.getInputStream(),
-						tempPartFile);
-				//FileUtils.copyInputStreamToFile(inputStream,
-				//		tempPartFile);
+				File tempPartFile = new File(tempFileDir.getPath(), hash+ "_" + chunk + ".part");
+				FileUtils.copyInputStreamToFile(tempFileItem.getInputStream(),tempPartFile);
+				
+				//tempPartFile.delete();//测试上传切片为空情况使用
+				if (tempPartFile!=null&&tempPartFile.length()!=0) {
+				}else{
+					tempPartFile.delete();
+					throw new Exception("上传切片为空,报异常重新请求上传。问题切片:"+tempFileDir.getPath()+"/"+hash+"_"+chunk+".part");
+				}
 				
 				//单个分片成功;
 				boolean uploadDone = true;
 				for (int i = 0; i < chunks; i++) {
-					File partFile = new File(tempFileDir.getPath(), hash
-							+ "_" + i + ".part");
+					File partFile = new File(tempFileDir.getPath(), hash+ "_" + i + ".part");
 					if (!partFile.exists()) {
 						uploadDone = false;
 					}
 				}
 				
 				Thread.sleep(20);
-				
 				File ft=new File(tempPartFile.getPath());
 				if(!ft.exists()){
 					statusCode=600;
@@ -207,12 +195,13 @@ public class Upload extends HttpServlet {
 					Thread.sleep(200);
 					partFinish=1;
 					File lockFile =new File(tempFileDir.getPath()+realFile.getName()+".lock");
+					log.info(tempFileDir.getPath()+realFile.getName()+".lock");
 					
 					if(!lockFile.exists()){
 						lockFile.createNewFile();
 					}
 					
-					RandomAccessFile fi = new RandomAccessFile(lockFile, "rw");  
+					RandomAccessFile fi = new RandomAccessFile(lockFile,"rw");  
 			        FileChannel fc = fi.getChannel();  
 			        FileLock fl=null;
 			        try{
@@ -225,19 +214,20 @@ public class Upload extends HttpServlet {
 			        	if(fl!=null) fl.release();
 			        	return;
 			        }	
-			        
+		
 					
 					for (int i = 0; i < chunks; i++) {
-						File partFile = new File(tempFileDir.getPath(), hash
-								+ "_" + i + ".part");
-					
-						FileOutputStream destTempfos = new FileOutputStream(
-								realFile, true);
+						File partFile = new File(tempFileDir.getPath(),hash+ "_" + i + ".part");
+						FileOutputStream destTempfos = new FileOutputStream(realFile,true);
 						
-						FileUtils.copyFile(partFile, destTempfos);
+						log.info("【上传】分片合并partFile="+partFile+",分片大小:"+partFile.length());
+						Long long1=FileUtils.copyFile(partFile, destTempfos);
+						log.info("【上传】合并拷贝完成的分片大小:"+long1);
+						
 						destTempfos.flush();
 						destTempfos.close();
-						//优化为只删最后分片
+						
+						//合并完成后,删除最后分片
 						if(i==chunks-1){
 							try{
 								partFile.delete();
@@ -245,9 +235,10 @@ public class Upload extends HttpServlet {
 								log.error("【上传】"+fileName+"删除最后分片失败:",e);
 								FileUtils.deleteDirectory(tempFileDir);
 							}
-							//FileUtils.deleteDirectory(partFile);
 						}
 					}
+					
+					log.info("【上传】文件合并完成！");
 					
 					// 删除临时目录中的分片文件
 					//FileUtils.deleteDirectory(tempFileDir);
@@ -261,13 +252,13 @@ public class Upload extends HttpServlet {
 							fc=null;
 						}
 					
-					lockFile.delete();
-					lockFile=null;
+						lockFile.delete();
+						lockFile=null;
 					}catch(Exception e){
 						log.error("【上传】lock文件删除失败:"+fileName,e);
 					}
 				
-			     log.info("【上传】文件合并完成！");
+			     
 				//文件合并完成后;
 				String config = null;
 				String fileUrl=null;
@@ -284,10 +275,10 @@ public class Upload extends HttpServlet {
 					JR.close(jd);
 				}
 				
-				if(null==config)config="{}";
-				Map configMap=new HashMap();
+				if(null==config){config="{}";}
+				
+				Map<String,Object> configMap=new HashMap<String,Object>();
 				JSONObject jo = JSONObject.fromObject(config);
-			
 				try {
 					configMap.put("bit_rate_v", jo.get("bit_rate_v"));
 					configMap.put("codec_name_v", jo.get("codec_name_v"));
@@ -300,26 +291,17 @@ public class Upload extends HttpServlet {
 				}
 			    
 				//生成图片
-				String data=tempFilePath +"@postdataWithCdnPassWordTruth@"+imagePath
-						+"@postdataWithCdnPassWordTruth@"+"320@postdataWithCdnPassWordTruth@240";
+//				String data=tempFilePath +"@postdataWithCdnPassWordTruth@"+imagePath
+//						+"@postdataWithCdnPassWordTruth@"+"320@postdataWithCdnPassWordTruth@240";
+				
 				if(ext.toLowerCase().indexOf("mp4")!=-1){
-				    //new GearClient().(data);
-					log.info("【上传】MP4截图："+data);
-					boolean flag=FFMpegUtil.getFFMpgeUtil().createPhoto(tempFilePath, imagePath, 320,240);
+					FFMpegUtil.getFFMpgeUtil().createPhoto(tempFilePath, imagePath, 320,240);
 				}
 				
-				log.info("【上传】获取信息1--->"+filePath+":"+fileName);
 			    //获取信息	
-				String msgFinish="0";
-				Map map=FFMpegUtil.getFFMpgeUtil().getMessage(tempFilePath);
-				if(map==null||map.size()<2){
-					msgFinish="2";
-				}else{
-					msgFinish="1";
-				}
+				Map<String,Object> map=FFMpegUtil.getFFMpgeUtil().getMessage(tempFilePath);
 				
 				//相对路径
-				log.info("【上传】获得信息2--->"+map+":"+fileName);
 				map.put("imgurl", imageUrl.replaceAll("//","/"));
 				map.put("realname", realFile.getName());
 				map.put("url", fileUrl.replaceAll("//","/"));
@@ -337,10 +319,10 @@ public class Upload extends HttpServlet {
 				JSONObject tempMap=JSONObject.fromObject("{}");
 				try {
 					jd = JR.getJd();
-					//String jt=jd.get(keyquq);
 					tempMap.putAll(JSONObject.fromObject(jd.get(keyquq)));
+					
 					//信息比较
-					Map map2=FFMpegUtil.compareConfig(tempMap, map);
+					Map<String,Object> map2=FFMpegUtil.compareConfig(tempMap, map);
 					
 					result.putAll(map2);
 					tempMap.putAll(result);
@@ -353,84 +335,37 @@ public class Upload extends HttpServlet {
 					JR.close(jd);
 				}
 				
-				
-				if(tempMap.get("error")!=null&&!"".equals(tempMap.get("error"))){
-					try{
-						File f2=new File(imagePath);
-						if(realFile.exists())realFile.delete();
-						if(f2.exists()&&imagePath.indexOf(".jpg")>10)f2.delete();
-						if(tempFileDir.exists())tempFileDir.delete();
-					}catch(Exception e2){
-						log.error("【上传】删除失败:",e2);
-					}
-				}
-				
-				//发送接口入库
-				/*try{
-					if(tempMap.get("error")==null||"".equals(tempMap.get("error"))){
-					
-						String backUrl=tempMap.getString("back_url");
-						if(backUrl.indexOf("\\?")>1){
-							backUrl=backUrl+"?key="+keyquq;
-						}else{
-							backUrl=backUrl+"&key="+keyquq;
-						}
-						long t1=System.currentTimeMillis();
-						String value=sendUrl(backUrl, "key="+keyquq);
-						long t2=System.currentTimeMillis();
-						if(value!=null&&value.toLowerCase().indexOf("success")!=-1){
-							tempMap.put("issuccess",1);
-							if(statusCode==0)statusCode=200;
-							log.info("成功回调,耗时-"+(t2-t1)+"ms:"+fileName+":"+backUrl+"-->"+keyquq);
-						}else{
-							log.info("回调失败,耗时-"+(t2-t1)+"ms:"+fileName+":"+backUrl+"-->"+keyquq+"--返回值为:"+value);
-							if(statusCode==0)statusCode=600;
-						}
-					
-					}else{
-						try{
-							File f2=new File(imagePath);
-							if(realFile.exists())realFile.delete();
-							if(f2.exists()&&imagePath.indexOf(".jpg")>10)f2.delete();
-							if(tempFileDir.exists())tempFileDir.delete();
-						}catch(Exception e2){
-							e2.printStackTrace();
-						}
-					}
-				}catch(Exception e){
-					log.info("回调失败:"+fileName+":"+tempMap.get("back_url")+"-->"+keyquq);
-					log.error(e.getMessage());
-					if(statusCode==0)statusCode=600;
-				}*/
+				//因为需要测试上传失败合并后视频是否正确，因此注释掉,请勿删除
+//				if(tempMap.get("error")!=null&&!"".equals(tempMap.get("error"))){
+//					try{
+//						log.info("【上传】文件比较error，删除文件,imagePath="+imagePath+";realFile:"+realFile.getName()+",路径:"+realFile.getPath());
+//						log.info("【上传】tempFileDir="+tempFileDir.getPath()+",name="+tempFileDir.getName());
+//						
+//						File f2=new File(imagePath);
+//						log.info("【上传】截图是否存在:"+f2.exists());
+//						log.info("【上传】视频是否存在:"+tempFileDir.exists());
+//						
+//						if(realFile.exists())realFile.delete();
+//						if(f2.exists()&&imagePath.indexOf(".jpg")>10)f2.delete();
+//						if(tempFileDir.exists())tempFileDir.delete();
+//					}catch(Exception e2){
+//						log.error("【上传】删除失败:",e2);
+//					}
+//				}
 				
 				tempMap.put("issuccess",1);
-				tempMap.put("msgFinish", 1);
-				log.info("【上传】token:"+fid+"---->"+fileName+":"+tempMap.toString());
-				log.info("【上传】上传完成返回页面数据："+tempMap.toString());
+				tempMap.put("msgFinish",1);
 				pw = response.getWriter();
 				pw.write(tempMap.toString());
-				
 			}
-			/*else{// 临时文件创建失败
-				if (chunk == chunks - 1) {
-					FileUtils.deleteDirectory(tempFileDir);
-					// ResponseUtil.responseFail(response, "500", "内部错误");
-				}
-			}*/
+		
 			}
-			/*if(issuccess!=1&&partFinish==1){
-				 response.setStatus(500);
-			}*/
+	
 			if(statusCode==0){
 				statusCode=200;
 			}
 			response.setStatus(statusCode);
-//		} catch (IOFileUploadException e) {
-//			 log.error("【上传】IOFileUploadException:",e);
-//			 response.setStatus(600);
-//			// ResponseUtil.responseFail(response, "500", "内部错误");
-//		
-			}catch(Exception e){
+		}catch(Exception e){
 			 log.error("【上传】Exception",e);
 			 response.setStatus(600);
 		}finally{
@@ -439,9 +374,9 @@ public class Upload extends HttpServlet {
 				pw.close();
 			}
 		}
-		
+			
 		log.info("【上传】结束uploader");
-	}
+}
 	
 
 	/**
@@ -464,82 +399,6 @@ public class Upload extends HttpServlet {
 		doGet(request, response);
 	}
 	
-	/**
-	 * 发送URL
-	 * @param doUrl
-	 * @param paramStr
-	 * @return
-	 * @throws Exception
-	 */
-	private String sendUrl(String doUrl, String paramStr)throws Exception{
-		if(doUrl.indexOf("http://")==0){
-			//参数
-	        StringBuffer recieveData = new StringBuffer();
-	        String recieveLine = "";
-	        String recieveString = "";
-	        
-	        //初始化 地址放到配置文档中
-	        java.net.URL url = new java.net.URL(doUrl);
-	        java.net.URLConnection con = url.openConnection();
-	        con.setUseCaches(false);
-	        con.setDoOutput(true);
-	        con.setDoInput(true);
-	        
-	        //发送
-	        BufferedWriter outWriter = new BufferedWriter(new OutputStreamWriter(con.getOutputStream(), "UTF-8"));
-	        outWriter.write(paramStr);
-	        outWriter.flush();
-	        outWriter.close();
-	        
-	        //获取服务器端返回信息
-	        BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream(),"UTF-8"));
-	        while ((recieveLine = in.readLine()) != null){
-	            recieveData.append(recieveLine);
-	        }
-	        in.close();
-	      
-	        recieveString = recieveData.toString();
-	        //返回数据
-	        return recieveString;
-		}else if(doUrl.indexOf("https://")==0){
-			byte[]b=null;
-			
-			try{
-				b=HttpsOpenUtil.post(doUrl, paramStr, "UTF-8");
-			}catch(Exception e){
-				log.error("sendUrl:"+doUrl+";失败:"+doUrl,e);
-			}
-			
-			if(b!=null){
-				return new String(b, "UTF-8");
-			}else return "";
-		}else{
-			return "";
-		}
-    }
-	
 	public void init() throws ServletException {
-	}
-
-	// 合并文件
-	public static void main(String args[]) throws Exception {
-		FileChannel outChannel = null;
-		/*
-		 * File f=new File("E:/up"); File[] fs=f.listFiles();
-		 * 
-		 * String name=fs[0].getName(); String fName="E:/be/"+name; outChannel =
-		 * new FileOutputStream(fName).getChannel(); for(int
-		 * i=0;i<fs.length;i++){
-		 * 
-		 * File ff=new File("E:/up/酒.mp4_"+i+".mp4");
-		 * System.out.println(ff.getName()); FileChannel fc = new
-		 * FileInputStream(ff).getChannel(); ByteBuffer bb =
-		 * ByteBuffer.allocate(1000*1000); while(fc.read(bb) != -1){ bb.flip();
-		 * outChannel.write(bb); bb.clear(); } fc.close(); } if (outChannel !=
-		 * null) {outChannel.close();}
-		 */
-		String str = "酒副本 - 副本2.mp4";
-		System.out.println(str.replaceAll(" ", ""));
-		
 	}
 }
